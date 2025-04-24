@@ -3,6 +3,8 @@
 import type React from "react";
 
 import { useState } from "react";
+import { ethers, toBeHex, parseEther } from "ethers";
+import TransactionParser from "./TransactionParser";
 import {
   Card,
   CardContent,
@@ -11,7 +13,7 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import Image from "next/image"
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,47 +28,170 @@ import {
   Copy,
   CheckCircle2,
 } from "lucide-react";
-import { IAssetsResponse } from "@GDdark/universal-account";
+import {
+  IAssetsResponse,
+  CHAIN_ID,
+  SUPPORTED_TOKEN_TYPE,
+} from "@GDdark/universal-account";
 
 interface DepositSectionProps {
   isProcessing: boolean;
+  setIsProcessing: (isProcessing: boolean) => void;
   transactionError: string;
+  setTransactionError: (error: string) => void;
   transactionUrl: string;
+  setTransactionUrl: (url: string) => void;
   accountInfo: {
     ownerAddress: string;
     evmSmartAccount: string;
     solanaSmartAccount: string;
   };
   primaryAssets: IAssetsResponse | null;
-  onDeposit: (amount: string, destinationChain: string) => Promise<void>;
+  universalAccount: any;
+  walletAddress: string;
+  refreshBalances: () => Promise<void>;
 }
 
-// Fixed destination chain - Arbitrum
-const DESTINATION_CHAIN = {
-  value: "arbitrum",
-  label: "Arbitrum",
-  icon: "A",
-  color: "blue",
+// PARTI token info
+const BNB_TOKEN = {
+  value: "bnb",
+  label: "BNB",
+  address: "0x0000000000000000000000000000000000000000",
+  icon: "/tokens/bnb.png",
+  color: "yellow",
 };
 
 export function DepositSection({
   isProcessing,
+  setIsProcessing,
   transactionError,
+  setTransactionError,
   transactionUrl,
+  setTransactionUrl,
   accountInfo,
   primaryAssets,
-  onDeposit,
+  universalAccount,
+  walletAddress,
+  refreshBalances,
 }: DepositSectionProps) {
   const [amount, setAmount] = useState<string>("");
   const [copiedEVM, setCopiedEVM] = useState(false);
+  const [transactionPreview, setTransactionPreview] = useState<any>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
-  // Fixed destination chain to Arbitrum
-  const destinationChain = DESTINATION_CHAIN.value;
+  /**
+   * Generate transaction preview when amount changes
+   */
+  /**
+   * Helper function to check if the transaction preview has minimal required data
+   */
+  const hasPreviewData = (preview: any): boolean => {
+    //console.log("@@@Preview:", JSON.stringify(preview));
+    return !!(preview && preview.sender && preview.receiver);
+  };
+
+  const generateTransactionPreview = async (amount: string) => {
+    if (!universalAccount || !walletAddress || !primaryAssets || !amount) {
+      setTransactionPreview(null);
+      return;
+    }
+
+    try {
+      setIsGeneratingPreview(true);
+
+      // Get BNB price from primaryAssets
+      const bnbPrice = primaryAssets.assets[5].price;
+
+      // Convert USD amount to BNB amount
+      // amount is in USD, divide by BNB price to get equivalent BNB amount
+      const bnbAmount = (parseFloat(amount) / bnbPrice).toFixed(8);
+
+      console.log(
+        `Generating preview for swapping ${amount} USD (${bnbAmount} BNB) and transferring to ${walletAddress}`
+      );
+
+      const transaction = await universalAccount.createUniversalTransaction({
+        chainId: CHAIN_ID.BSC_MAINNET,
+        // Use the calculated BNB amount based on USD value
+        expectTokens: [
+          {
+            type: SUPPORTED_TOKEN_TYPE.BNB,
+            amount: bnbAmount,
+          },
+        ],
+        transactions: [
+          {
+            to: walletAddress,
+            data: "0x",
+            value: toBeHex(parseEther(bnbAmount)),
+          },
+        ],
+      });
+
+      console.log("Preview transaction created", transaction);
+
+      // Store the transaction preview data
+      console.log("Setting transaction preview");
+      setTransactionPreview(transaction);
+    } catch (error) {
+      console.error("Error generating transaction preview:", error);
+      setTransactionPreview(null);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  /**
+   * Handle token swap and transfer back to EOA wallet using the Universal Account
+   */
+  const handleDeposit = async (amount: string, tokenSymbol: string) => {
+    if (!universalAccount || !walletAddress || !transactionPreview) return;
+
+    try {
+      setIsProcessing(true);
+      setTransactionError("");
+      setTransactionUrl("");
+
+      console.log("Executing the previewed transaction");
+
+      // Get wallet instance for signing
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Sign and send the transaction
+      const messageBytes = ethers.getBytes(transactionPreview.rootHash);
+      const signature = await signer.signMessage(messageBytes);
+      const sendResult = await universalAccount.sendTransaction(
+        transactionPreview,
+        signature
+      );
+
+      console.log("Transaction result:", sendResult);
+
+      // Set the transaction URL to the Universal Explorer
+      setTransactionUrl(
+        `https://universalx.app/activity/details?id=${sendResult.transactionId}`
+      );
+
+      // Reset the transaction preview
+      setTransactionPreview(null);
+
+      // Refresh balances after transaction
+      refreshBalances();
+    } catch (error) {
+      console.error("Error executing token swap:", error);
+      setTransactionError(
+        error instanceof Error ? error.message : "Unknown error occurred"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (amount) {
-      onDeposit(amount, destinationChain);
+    if (transactionPreview) {
+      handleDeposit(amount, "USDC");
     }
   };
 
@@ -88,18 +213,7 @@ export function DepositSection({
     setTimeout(() => setStateFn(false), 2000);
   };
 
-  // Helper to get color classes
-  const getTokenColorClasses = (color: string) => {
-    const colorMap: Record<string, string> = {
-      indigo: "bg-indigo-900/30 text-indigo-300 border-indigo-800/60",
-      blue: "bg-blue-900/30 text-blue-300 border-blue-800/60",
-      green: "bg-green-900/30 text-green-300 border-green-800/60",
-      yellow: "bg-yellow-900/30 text-yellow-300 border-yellow-800/60",
-      purple: "bg-purple-900/30 text-purple-300 border-purple-800/60",
-      red: "bg-red-900/30 text-red-300 border-red-800/60",
-    };
-    return colorMap[color] || "bg-gray-900/30 text-gray-300 border-gray-800/60";
-  };
+  console.log("@@@Primary assets:", primaryAssets?.assets[5].price);
 
   return (
     <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm h-full">
@@ -107,11 +221,12 @@ export function DepositSection({
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="text-white flex items-center gap-2">
-              <Coins className="h-5 w-5 text-blue-400" />
-              Universal Account
+              <Coins className="h-5 w-5 text-purple-400" />
+              BNB Token Swap
             </CardTitle>
             <CardDescription className="text-gray-400 mt-2">
-              Deposit assets to Arbitrum via your Universal Account
+              Use USDT or USDC on any chain to swap for BNB token and send it
+              back to your EOA.
             </CardDescription>
           </div>
           {primaryAssets && (
@@ -154,42 +269,91 @@ export function DepositSection({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Amount Input */}
-          <div className="space-y-2">
-            <Label htmlFor="amount" className="text-gray-300 font-medium">
-              Amount
+          {/* Amount input */}
+          <div className="space-y-1">
+            <Label className="text-gray-300 font-medium" htmlFor="amount">
+              Amount to Swap (USD)
             </Label>
             <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center text-sm text-gray-400">
+                $
+              </span>
               <Input
                 id="amount"
-                type="text"
+                type="number"
                 placeholder="0.00"
-                className="bg-gray-900 border-gray-700 text-gray-300 pr-14"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  const newAmount = e.target.value;
+                  setAmount(newAmount);
+                  if (newAmount && parseFloat(newAmount) > 0) {
+                    generateTransactionPreview(newAmount);
+                  } else {
+                    setTransactionPreview(null);
+                  }
+                }}
+                className="text-gray-300 pl-7 transition-all bg-gray-800/40 border-gray-700/60 focus-visible:ring-blue-500"
+                min="0"
+                step="any"
+                disabled={isProcessing}
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <span className="text-gray-400">USD</span>
-              </div>
             </div>
           </div>
 
-          {/* Destination Chain - Static Arbitrum */}
+          {/* Target Token - Static BNB */}
           <div className="space-y-2">
-            <Label htmlFor="destination" className="text-gray-300 font-medium">
-              Destination Chain
+            <Label htmlFor="targetToken" className="text-gray-300 font-medium">
+              Target Token
             </Label>
             <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-md p-2.5">
               <Image
-                src="/chains/arbitrum.png"
-                alt="Arbitrum Chain"
+                src={BNB_TOKEN.icon}
+                alt={BNB_TOKEN.label}
                 width={24}
                 height={24}
                 className="rounded-full"
               />
-              <span className="text-gray-300">{DESTINATION_CHAIN.label}</span>
+              <div className="flex-1">
+                <span className="text-gray-300">{BNB_TOKEN.label}</span>
+                <div className="text-xs text-gray-400 font-mono mt-1">
+                  {BNB_TOKEN.address.substring(0, 6)}...
+                  {BNB_TOKEN.address.substring(BNB_TOKEN.address.length - 4)}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className="bg-purple-900/30 text-purple-300 border-purple-800/60 px-2 py-0 text-xs"
+              >
+                Fixed
+              </Badge>
             </div>
           </div>
+
+          {/* Destination Address */}
+          <div className="space-y-2">
+            <Label htmlFor="destination" className="text-gray-300 font-medium">
+              Destination Address
+            </Label>
+            <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-md p-2.5">
+              <Wallet className="h-4 w-4 text-gray-400" />
+              <span className="text-gray-300 font-mono text-sm">
+                {formatAddress(accountInfo.ownerAddress)}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">
+              Tokens will be sent back to your EOA wallet
+            </p>
+          </div>
+
+          {/* Transaction Preview */}
+          {transactionPreview && hasPreviewData(transactionPreview) && (
+            <div className="mt-4 p-3 border border-gray-700 rounded-md bg-gray-800/50">
+              <h3 className="font-medium text-sm text-gray-300 mb-2">
+                Transaction Preview
+              </h3>
+              <TransactionParser transactionPreview={transactionPreview} />
+            </div>
+          )}
 
           {/* Transaction Status Alerts */}
           {transactionError && (
@@ -220,48 +384,15 @@ export function DepositSection({
             </Alert>
           )}
 
-          {/* Transfer Preview Card - only show when amount is filled */}
-          {amount && !isProcessing && !transactionError && !transactionUrl && (
-            <div className="bg-gray-900/40 rounded-md p-3 border border-gray-700/50">
-              <div className="text-xs text-gray-400 mb-2">Transfer Preview</div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-indigo-900/30 text-indigo-300 border-indigo-800/60">
-                    Ξ
-                  </span>
-                  <div>
-                    <div className="text-gray-200 font-medium">
-                      {amount} ETH
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      From Universal Account
-                    </div>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400" />
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${getTokenColorClasses(
-                      DESTINATION_CHAIN.color
-                    )}`}
-                  >
-                    {DESTINATION_CHAIN.icon}
-                  </span>
-                  <div>
-                    <div className="text-gray-200 font-medium">
-                      {DESTINATION_CHAIN.label}
-                    </div>
-                    <div className="text-xs text-gray-400">Destination</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Submit Button */}
           <Button
             type="submit"
-            disabled={isProcessing || !amount}
+            disabled={
+              isProcessing ||
+              !transactionPreview ||
+              !hasPreviewData(transactionPreview) ||
+              isGeneratingPreview
+            }
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isProcessing ? (
@@ -269,9 +400,14 @@ export function DepositSection({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Processing...
               </>
+            ) : isGeneratingPreview ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Preparing...
+              </>
             ) : (
               <>
-                Deposit and Bridge
+                Confirm Swap
                 <ArrowRight className="ml-2 h-4 w-4" />
               </>
             )}
@@ -280,7 +416,8 @@ export function DepositSection({
       </CardContent>
       <CardFooter className="border-t border-gray-700 bg-gray-800/30 px-6 py-4">
         <p className="text-xs text-gray-400 w-full text-center">
-          Deposits are processed via Universal Account and bridged to Arbitrum
+          You automatically receive BNB to your EOA wallet even if you
+          don&apos;t hold any or don&apos;t hold any assets on BNB Chain.
         </p>
       </CardFooter>
     </Card>

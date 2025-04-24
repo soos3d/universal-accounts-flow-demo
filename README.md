@@ -1,74 +1,28 @@
-# Universal Accounts Flow Demo
+# Universal Accounts Deposit Flow Demo
 
-A Next.js application demonstrating Universal Accounts powered by Particle Network, focusing on seamless cross-chain USDC and USDT deposits. This demo showcases how users can deposit tokens from various chains directly into an application on Arbitrum without manual bridging.
+## Overview
+This demo showcases Particle Network's Universal Accounts as a deposit flow solution for dApps. It demonstrates how Web3 applications can leverage chain abstraction to provide users with a simplified experience when moving assets across different blockchain networks.
 
-## Features
+## Purpose
+The primary purpose of this demo is to illustrate how Universal Accounts can solve one of the most significant friction points in Web3: **cross-chain asset movement**. 
 
-- 🔐 MetaMask Wallet Integration
-- 💱 Cross-chain USDC/USDT Deposits
-- 🌉 Automatic Cross-chain Bridging
-- 🚀 Instant Token Reception
-- 🎯 Simplified User Experience
+Traditional approaches require users to:
+1. Bridge assets manually between chains
+2. Pay gas fees in native tokens for each chain
+3. Navigate complex UIs across different protocols
+4. Wait for confirmations across multiple transactions
 
-## Tech Stack
+With Universal Accounts, this process is abstracted away, allowing users to deposit assets from any supported chain directly into a dApp operating on a different chain.
 
-- Next.js 14
-- TypeScript
-- Universal Account SDK (@GDdark/universal-account)
-- Ethers.js v6
-- Tailwind CSS
-- Radix UI Components
+## Key Features Demonstrated
 
-## Getting Started
+### 1. Chain Abstraction
+Users can deposit assets from one chain and have them appear on another chain without manually bridging. The entire cross-chain complexity is handled behind the scenes by Particle's Universal Accounts infrastructure.
 
-### Prerequisites
+### 2. Unified User Experience
+The demo presents a single interface to handle deposits from multiple chains, eliminating the need for users to interact with different bridging protocols or manage multiple wallets.
 
-- Node.js >= 18
-- Yarn package manager
+### 3. Token Conversion
+Users can deposit various supported tokens (like USDC or USDT) from any chain, and receive BNB on BNB Chain in the demo app - all in a single transaction from the user perspective.
 
-### Installation
-
-1. Clone the repository
-2. Copy the environment variables:
-   ```bash
-   cp .env.sample .env
-   ```
-3. Update the `.env` file with your credentials
-4. Install dependencies:
-   ```bash
-   yarn install
-   ```
-
-### Development
-
-Run the development server:
-
-```bash
-yarn dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build
-
-Create a production build:
-
-```bash
-yarn build
-```
-
-Start the production server:
-
-```bash
-yarn start
-```
-
-## Environment Variables
-
-Make sure to set up the following environment variables in your `.env` file:
-
-- `NEXT_PUBLIC_UA_PROJECT_ID`: Your Universal Account project ID
-
-## License
-
-This project is private and proprietary. All rights reserved.
+> Find the guide for this app on the [Particle Docs](https://particle.network/docs/universal-accounts/)

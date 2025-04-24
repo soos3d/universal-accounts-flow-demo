@@ -1,19 +1,51 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ethers } from "ethers";
+import { ethers, toBeHex, parseEther } from "ethers";
 import {
   UniversalAccount,
   IAssetsResponse,
   CHAIN_ID,
-  SUPPORTED_PRIMARY_TOKENS,
+  SUPPORTED_TOKEN_TYPE,
 } from "@GDdark/universal-account";
 
 // Components
 import { WalletConnection } from "@/app/components/WalletConnection";
 //import { TransactionSection } from "@/app/components/TransactionSection";
 import { DepositSection } from "@/app/components/DepositSection";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+// Collapsible Section Component
+const CollapsibleSection = ({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="rounded-lg border border-gray-800 bg-card text-card-foreground shadow overflow-hidden">
+      <div
+        className="p-4 bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-800 flex justify-between items-center cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="font-medium text-blue-400">{title}</h3>
+        <button
+          type="button"
+          className="text-gray-400 hover:text-gray-300 transition-colors"
+          aria-label={isOpen ? "Close section" : "Open section"}
+        >
+          {isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </button>
+      </div>
+      {isOpen && <div className="text-gray-300">{children}</div>}
+    </div>
+  );
+};
 
 export default function Home() {
   // State for wallet connection
@@ -36,22 +68,6 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [transactionUrl, setTransactionUrl] = useState<string>("");
   const [transactionError, setTransactionError] = useState<string>("");
-
-  /**
-   * Helper function to get the block explorer URL for a given chain
-   */
-  const getChainExplorer = (chain: string): string => {
-    const explorers: Record<string, string> = {
-      ethereum: "https://etherscan.io",
-      arbitrum: "https://arbiscan.io",
-      optimism: "https://optimistic.etherscan.io",
-      polygon: "https://polygonscan.com",
-      bsc: "https://bscscan.com",
-      avalanche: "https://snowtrace.io",
-      base: "https://basescan.org",
-    };
-    return explorers[chain] || "https://etherscan.io";
-  };
 
   /**
    * Step 1: Connect Wallet
@@ -147,49 +163,13 @@ export default function Home() {
     fetchSmartAccountAddresses();
   }, [universalAccount, walletAddress, fetchSmartAccountAddresses]);
 
-  /**
-   * Handle deposit transaction using the Universal Account
-   * This is a placeholder for the actual implementation
-   */
-  const handleDeposit = async (
-    amount: string,
-    destinationChain: string
-  ) => {
-    if (!universalAccount) return;
-
-    try {
-      setIsProcessing(true);
-      setTransactionError("");
-      setTransactionUrl("");
-
-      // Placeholder for the transaction logic that will be added by the user
-      console.log(`Depositing ${amount} ETH to ${destinationChain}`);
-
-      // Call the Universal Account SDK to perform the deposit
-      // This is a simulated response for now
-      const txHash = "0x" + Math.random().toString(16).substr(2, 64);
-      const chainExplorer = getChainExplorer(destinationChain);
-      setTransactionUrl(`${chainExplorer}/tx/${txHash}`);
-
-      // Refresh balances after transaction
-      fetchSmartAccountAddresses();
-    } catch (error) {
-      console.error("Error executing deposit:", error);
-      setTransactionError(
-        error instanceof Error ? error.message : "Unknown error occurred"
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
       <div className="container mx-auto px-4 py-10">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-6">
             <h1 className="text-4xl font-bold text-white">
-              Universal Account Deposit
+              Universal Account Deposit Flow Demo
             </h1>
             <p className="mt-2 text-gray-400">
               Deposit assets to your Universal Account and move them across
@@ -198,66 +178,69 @@ export default function Home() {
           </div>
 
           {/* Explanatory Section */}
-          <div className="mb-8 bg-gray-800/60 backdrop-blur-sm rounded-lg border border-gray-700 p-5">
+          <div className="mb-8 bg-gray-800 backdrop-blur-sm rounded-lg p-5">
             <h2 className="text-xl font-semibold text-white mb-2">
               How This Demo Works
             </h2>
             <div className="prose prose-sm prose-invert max-w-none">
-              <div className="space-y-4 text-gray-300 text-sm leading-relaxed">
-                <p className="bg-gray-700/30 p-3 rounded-md border border-gray-600">
-                  <span className="font-semibold text-blue-400">
-                    Key Concept:
-                  </span>{" "}
-                  This demo showcases the integration of Universal Accounts as a
-                  dApp&apos;s deposit flow.
-                </p>
-                <p className="bg-gray-700/30 p-3 rounded-md border border-gray-600">
-                  <span className="font-semibold text-blue-400">Focus:</span>{" "}
-                  Our demo takes as an example an imaginary app that uses USDC
-                  and USDT on Arbitrum. Users can leverage their Universal
-                  Account to deposit these tokens from various chains directly
-                  into the app.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-blue-400">
-                    The Process:
-                  </h3>
-                  <ol className="space-y-1 list-decimal list-inside text-gray-300 text-sm">
-                    <li>Connect your browser wallet</li>
-                    <li>
-                      You have assets on your EOA (USDC and USDT) on various
-                      chains
-                    </li>
-                    <li>You need to deposit assets into the app to use it</li>
-                    <li>
-                      Instead of bridging, deposit assets into the Universal
-                      Account
-                    </li>
-                    <li>
-                      Select token (USDC or USDT), amount, and destination chain
-                    </li>
-                    <li>Send via Universal Account</li>
-                    <li>
-                      Receive funds on the destination chain automatically and
-                      immediately
-                    </li>
-                  </ol>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-blue-400">
-                    Benefits:
-                  </h3>
-                  <ul className="space-y-1 list-disc list-inside text-gray-300 text-sm">
-                    <li>No need to think about networks</li>
-                    <li>No manual bridging required</li>
-                    <li>Simplified UX for cross-chain transactions</li>
-                    <li>Single interface for multi-chain operations</li>
-                  </ul>
-                </div>
+              {/* Collapsible sections */}
+              <div className="space-y-4 text-gray-300 leading-relaxed">
+                {/* Key Concept Section */}
+                <CollapsibleSection title="Key Concept" defaultOpen={true}>
+                  <p className="text-sm text-gray-300 p-4 bg-gray-900">
+                    This demo showcases the integration of Universal Accounts as
+                    a dApp&apos;s deposit flow.
+                  </p>
+                </CollapsibleSection>
+                {/* Focus Section */}
+                <CollapsibleSection title="Focus" defaultOpen={true}>
+                  <p className="text-sm text-gray-300 p-4 bg-gray-900">
+                    Our demo takes as an example an imaginary app that uses BNB
+                    on BNB Chain. Users can leverage their Universal Account to
+                    deposit BNB from various chains directly into the app.
+                  </p>
+                </CollapsibleSection>
+                {/* The Process Section */}
+                <CollapsibleSection title="The Process" defaultOpen={false}>
+                  <div className="p-4 pt-2 bg-gray-900">
+                    <ol className="space-y-2 text-gray-300 text-sm pl-5 list-decimal bg-gray-900">
+                      <li className="pl-1">Connect your browser wallet</li>
+                      <li className="pl-1">
+                        You have assets on your EOA (USDC and USDT) on various
+                        chains
+                      </li>
+                      <li className="pl-1">
+                        You need to deposit BNB into the app to use it
+                      </li>
+                      <li className="pl-1">
+                        Instead of bridging, deposit assets (USDT or USDC) into
+                        the Universal Account
+                      </li>
+                      <li className="pl-1">
+                        Choose how many USD worth of BNB you want to deposit
+                      </li>
+                      <li className="pl-1">Send via Universal Account</li>
+                      <li className="pl-1">
+                        Receive funds on the destination chain automatically
+                      </li>
+                    </ol>
+                  </div>
+                </CollapsibleSection>
+                <p>
+                  In this scenario, we are using an in-app deposit flow to
+                  transfer assets to the Universal Account. Alternatively, you
+                  can simply send assets directly from your EOA (Externally
+                  Owned Account) to the Universal Account. Any{" "}
+                  <a
+                    href="https://uasdev.mintlify.app/universal-accounts/cha/chains"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    supported assets listed in the documentation
+                  </a>{" "}
+                  can be transferred this way.
+                </p>{" "}
               </div>
             </div>
           </div>
@@ -273,7 +256,11 @@ export default function Home() {
                 onConnect={connectWallet}
                 onDisconnect={disconnectWallet}
                 onWalletUpdate={setWalletAddress}
-                universalAccount={accountInfo ? { evmSmartAccount: accountInfo.evmSmartAccount } : undefined}
+                universalAccount={
+                  accountInfo
+                    ? { evmSmartAccount: accountInfo.evmSmartAccount }
+                    : undefined
+                }
               />
             </div>
 
@@ -282,11 +269,16 @@ export default function Home() {
               {walletAddress && accountInfo ? (
                 <DepositSection
                   isProcessing={isProcessing}
+                  setIsProcessing={setIsProcessing}
                   transactionError={transactionError}
+                  setTransactionError={setTransactionError}
                   transactionUrl={transactionUrl}
+                  setTransactionUrl={setTransactionUrl}
                   accountInfo={accountInfo}
                   primaryAssets={primaryAssets}
-                  onDeposit={handleDeposit}
+                  universalAccount={universalAccount}
+                  walletAddress={walletAddress}
+                  refreshBalances={fetchSmartAccountAddresses}
                 />
               ) : (
                 <div className="h-full flex items-center justify-center p-8 bg-gray-800/30 backdrop-blur-sm rounded-lg border border-gray-700">
