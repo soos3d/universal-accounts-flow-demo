@@ -26,3 +26,39 @@ The demo presents a single interface to handle deposits from multiple chains, el
 Users can deposit various supported tokens (like USDC or USDT) from any chain, and receive BNB on BNB Chain in the demo app - all in a single transaction from the user perspective.
 
 > Find the guide for this app on the [Particle Docs](https://particle.network/docs/universal-accounts/)
+
+## Local Development Setup
+
+### Prerequisites
+- Node.js (v20 or higher)
+- npm or yarn
+- A Universal Accounts project ID from [Particle Network](https://particle.network)
+
+### Installation
+1. Clone the repository
+```bash
+git clone https://github.com/soos3d/universal-accounts-flow-demo.git
+```
+
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Environment Setup
+- Copy the `.env.sample` file to `.env.local`:
+
+- Update `.env.local` with your configuration:
+  - Add your Universal Accounts project ID (`NEXT_PUBLIC_UA_PROJECT_ID`)
+  - (Optional) Replace RPC URLs with your own endpoints
+
+### Running the App
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000)
