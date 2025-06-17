@@ -2,23 +2,6 @@
 # yarn lockfile v1
 
 
-"@GDdark/universal-account@^1.0.12":
-  version "1.0.12"
-  resolved "https://npm.pkg.github.com/download/@GDdark/universal-account/1.0.12/03d8a6e67d15357ef96a0fdc61132ec97df555b4#03d8a6e67d15357ef96a0fdc61132ec97df555b4"
-  integrity sha512-sjJI5hoWzSVPLikke9Jk7oHq2s8upR1lrW3JX5NVs2WC9pKTUw95IJ0WJbK2xY2N06Hzcua417KOE7mK5kZW8Q==
-  dependencies:
-    "@coral-xyz/anchor" "^0.30.1"
-    "@noble/hashes" "^1.7.1"
-    "@solana/spl-token" "^0.4.9"
-    "@solana/web3.js" "^1.98.0"
-    axios "^1.8.4"
-    borsh "^2.0.0"
-    fast-json-stable-stringify "^2.1.0"
-    merkletreejs "^0.5.1"
-    ts-enum-util "^4.1.0"
-    uuid "^11.1.0"
-    viem "^2.24.3"
-
 "@adraffy/ens-normalize@1.10.1":
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.1.tgz#63430d04bd8c5e74f8d7d049338f1cd9d4f02069"
@@ -1065,6 +1048,23 @@
     "@types/elliptic" "^6.4.14"
     buffer "^6.0.3"
     elliptic "^6.5.4"
+
+"@particle-network/universal-account-sdk@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@particle-network/universal-account-sdk/-/universal-account-sdk-1.0.1.tgz#c72816832b8c2fa2c0c94336a0ed03223a543d51"
+  integrity sha512-OkQX+giyExvXU3/OEZosndcb/zMeDGDC0YyxrvxvqbivSgvOOhNTsk/rci6PDoO2Urgd+MoDKOGyQvecq5V5Ww==
+  dependencies:
+    "@coral-xyz/anchor" "^0.30.1"
+    "@noble/hashes" "^1.7.1"
+    "@solana/spl-token" "^0.4.9"
+    "@solana/web3.js" "^1.98.0"
+    axios "^1.8.4"
+    borsh "^2.0.0"
+    fast-json-stable-stringify "^2.1.0"
+    merkletreejs "^0.5.1"
+    ts-enum-util "^4.1.0"
+    uuid "^11.1.0"
+    viem "^2.24.3"
 
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"

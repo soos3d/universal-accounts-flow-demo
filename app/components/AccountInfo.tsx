@@ -1,4 +1,4 @@
-import { IAssetsResponse } from "@GDdark/universal-account";
+import { IAssetsResponse } from "@particle-network/universal-account-sdk";
 import {
   Card,
   CardContent,

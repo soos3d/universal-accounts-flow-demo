@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { UniversalAccount, IAssetsResponse } from "@GDdark/universal-account";
+import {
+  UniversalAccount,
+  IAssetsResponse,
+} from "@particle-network/universal-account-sdk";
 
 // Components
 import { WalletConnection } from "@/app/components/WalletConnection";
-//import { TransactionSection } from "@/app/components/TransactionSection";
 import { DepositSection } from "@/app/components/DepositSection";
-import { ChevronDown } from "lucide-react";
 
 // UI Components
 import {
