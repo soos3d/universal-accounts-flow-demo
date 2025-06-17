@@ -232,7 +232,7 @@ export default function Home() {
                   can simply send assets directly from your EOA (Externally
                   Owned Account) to the Universal Account. Any{" "}
                   <a
-                    href="/universal-accounts/cha/chains#primary-assets"
+                    href="https://uasdev.mintlify.app/universal-accounts/cha/chains#primary-assets"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-400 hover:underline"
